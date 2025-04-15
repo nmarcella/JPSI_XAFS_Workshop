@@ -406,12 +406,12 @@ if use_custom_e0:
     e0_val = st.sidebar.number_input("E0 (eV)", value=st.session_state.get('e0_input', 7112.0), format="%.2f", help="Absorption edge energy. If unchecked, Larch estimates it.", key="e0_input")
 else:
     st.sidebar.markdown("_(E0 will be estimated by Larch)_")
-use_custom_step = st.sidebar.checkbox("Set Custom Edge Step?", value=False, key="use_step")
+# use_custom_step = st.sidebar.checkbox("Set Custom Edge Step?", value=False, key="use_step")
 step_val = None
-if use_custom_step:
-    step_val = st.sidebar.number_input("Edge Step", value=st.session_state.get('step_input', 1.0), format="%.3f", help="Absorption edge step height. If unchecked, Larch estimates it.", key="step_input")
-else:
-    st.sidebar.markdown("_(Edge step will be estimated by Larch)_")
+# if use_custom_step:
+#     step_val = st.sidebar.number_input("Edge Step", value=st.session_state.get('step_input', 1.0), format="%.3f", help="Absorption edge step height. If unchecked, Larch estimates it.", key="step_input")
+# else:
+#     st.sidebar.markdown("_(Edge step will be estimated by Larch)_")
 use_custom_pre = st.sidebar.checkbox("Set Custom Pre-edge Range?", value=False, key="use_pre")
 pre1_val = None
 pre2_val = None
