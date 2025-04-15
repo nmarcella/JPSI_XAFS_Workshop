@@ -1445,7 +1445,8 @@ if st.session_state.get('fit_result_obj') is not None: # Use .get for safety
                 # Only update axis range and plot if data was plotted
                 if data_r_present or model_r_present:
                     # Use fit_rmin/fit_rmax defined earlier in script run
-                    fig5.update_xaxes(range=[fit_rmin, fit_rmax])
+                    #fig5.update_xaxes(range=[fit_rmin, fit_rmax])
+                    fig5.update_xaxes(range=[0,6])
                     fig5.update_layout(title=f"Fit Comparison in R-Space: {display_filename}", xaxis_title="R (Å)", yaxis_title="χ(R) Magnitude (arb. units)", legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
                     st.plotly_chart(fig5, use_container_width=True)
                 else:
