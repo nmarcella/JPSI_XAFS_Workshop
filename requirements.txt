@@ -7,24 +7,24 @@ bcrypt==4.3.0
 blinker==1.9.0
 boto3==1.37.33
 botocore==1.37.33
-cached-property @ file:///home/conda/feedstock_root/build_artifacts/cached_property_1615209429212/work
+cached-property
 cachetools==5.5.2
 certifi==2025.1.31
 cffi==1.17.1
 charset-normalizer==3.4.1
 click==8.1.8
-contourpy @ file:///home/conda/feedstock_root/build_artifacts/contourpy_1731428301407/work
+contourpy
 cryptography==44.0.2
-cycler @ file:///home/conda/feedstock_root/build_artifacts/cycler_1733332471406/work
+cycler
 dill==0.3.9
 dnspython==2.7.0
 emmet-core==0.84.7rc1
 fabio==2024.9.0
-fonttools @ file:///home/conda/feedstock_root/build_artifacts/fonttools_1743732186120/work
+fonttools
 gitdb==4.0.12
 GitPython==3.1.44
 greenlet==3.1.1
-h5py @ file:///home/conda/feedstock_root/build_artifacts/h5py_1739952267264/work
+h5py
 hdf5plugin==5.1.0
 idna==3.10
 imageio==2.37.0
@@ -36,7 +36,7 @@ joblib==1.4.2
 jsonlines==4.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
-kiwisolver @ file:///home/conda/feedstock_root/build_artifacts/kiwisolver_1736908181161/work
+kiwisolver
 larixite==2024.10.0
 latexcodec==3.0.0
 lazy_loader==0.4
@@ -60,11 +60,11 @@ numdifftools==0.9.41
 numexpr==2.10.2
 numpy==1.26.4
 orjson==3.10.16
-packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1733203243479/work
+packaging
 palettable==3.3.3
 pandas==2.2.3
 paramiko==3.5.1
-pillow @ file:///croot/pillow_1738010226202/work
+pillow
 platformdirs==4.3.7
 plotly==6.0.1
 protobuf==5.29.4
@@ -81,10 +81,10 @@ pyFAI==2025.3.0
 pymatgen==2025.4.10
 pymongo==4.10.1
 PyNaCl==1.5.0
-pyparsing @ file:///home/conda/feedstock_root/build_artifacts/pyparsing_1743089729650/work
+pyparsing
 pyshortcuts==1.9.5
 PySide6==6.7.2
-python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1733215673016/work
+python-dateutil
 python-dotenv==1.1.0
 pytz==2025.2
 PyYAML==6.0.2
@@ -97,12 +97,12 @@ ruamel.yaml.clib==0.2.12
 s3transfer==0.11.4
 scikit-image==0.25.2
 scikit-learn==1.6.1
-scipy @ file:///home/conda/feedstock_root/build_artifacts/scipy-split_1739790643552/work/dist/scipy-1.15.2-cp312-cp312-linux_x86_64.whl#sha256=9c4c390e67a1320f6f3b418568855f0a6759c34ce8e5b9eb6cc90d02fd7ba711
+scipy
 sentinels==1.0.0
 setuptools==75.8.0
 shiboken6==6.7.2
 silx==2.2.2
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1733380938961/work
+six
 smart-open==7.1.0
 smmap==5.0.2
 spglib==2.6.0
@@ -119,14 +119,14 @@ termcolor==3.0.1
 threadpoolctl==3.6.0
 tifffile==2025.3.30
 toml==0.10.2
-tornado @ file:///home/conda/feedstock_root/build_artifacts/tornado_1732615905931/work
+tornado
 tqdm==4.67.1
 typing-inspection==0.4.0
 typing_extensions==4.13.2
 tzdata==2025.2
 umf==0.10.0
 uncertainties==3.2.2
-unicodedata2 @ file:///home/conda/feedstock_root/build_artifacts/unicodedata2_1736692508163/work
+unicodedata2
 urllib3==2.4.0
 watchdog==6.0.0
 wheel==0.45.1
