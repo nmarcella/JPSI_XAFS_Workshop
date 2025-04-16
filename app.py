@@ -501,16 +501,16 @@ with st.sidebar.expander("Set Parameters for Paths in Fit", expanded=True): # Ex
             default_s02 = float(getattr(default_path_obj, 's02', 1.0)) if default_path_obj else 1.0
             default_degen = float(getattr(default_path_obj, 'degen', 1.0)) if default_path_obj else 1.0
             default_sigma2 = float(getattr(default_path_obj, 'sigma2', 0.002)) if default_path_obj else 0.002
-            default_deltar = 0.0 # deltar usually defaults to 0
+            default_deltar = 0.001 # deltar usually defaults to 0
             default_e0 = 0.0 # e0 shift usually defaults to 0
 
             # S02
-            vary_s02 = st.checkbox(f"Vary S₀²?", value=True, key=f"vary_s02_{path_key}")
+            vary_s02 = st.checkbox(f"Vary S₀²?", value=False, key=f"vary_s02_{path_key}")
             guess_s02 = st.number_input(f"Guess/Value S₀²", value=default_s02, format="%.3f", key=f"guess_s02_{path_key}")
             path_params['s02'] = {'vary': vary_s02, 'guess': guess_s02}
 
             # Degen
-            vary_degen = st.checkbox(f"Vary N (degen)?", value=False, key=f"vary_degen_{path_key}") # Usually fixed or tied
+            vary_degen = st.checkbox(f"Vary N (degen)?", value=True, key=f"vary_degen_{path_key}") # Usually fixed or tied
             guess_degen = st.number_input(f"Guess/Value N", value=default_degen, format="%.2f", key=f"guess_degen_{path_key}")
             path_params['degen'] = {'vary': vary_degen, 'guess': guess_degen}
 
@@ -818,7 +818,7 @@ def process_and_plot(dat, feff_paths, selected_path_keys, shell_info, absorber_i
             plot_end_abs_e = e0_used + plot_options['plot_end_rel']
             fig1.update_xaxes(range=[plot_start_abs_e, plot_end_abs_e])
             plot_range_set_e = True
-        fig1.update_layout(title=f'Pre-edge Subtraction & Background: {filename_for_title}', xaxis_title='Energy (eV)', yaxis_title='Absorption (arbitrary units)', legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
+        fig1.update_layout(title=f'Pre-edge Subtraction & Background: {filename_for_title}', xaxis_title='Energy (eV)', yaxis_title='Absorption', legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
         st.plotly_chart(fig1, use_container_width=True)
 
         # --- Plot 2: Flattened Normalized Data ---
@@ -836,7 +836,7 @@ def process_and_plot(dat, feff_paths, selected_path_keys, shell_info, absorber_i
             st.warning("Flattened data (`dat.flat`) not found or generated.")
 
         # --- Plot 3: chi(k) Comparison ---
-        st.markdown(f"**Plot 3: Experimental vs Model χ(k) * k^{params['ft_kweight']}**")
+        st.markdown(fr"**Plot 3: Experimental vs Model χ(k) * $k^{{{params['ft_kweight']}}}$**")
         fig3 = go.Figure()
         plot_k_weight = params['ft_kweight'] # Use FT k-weight for plotting consistency
         k_present = hasattr(dat, 'k') and dat.k is not None and len(dat.k) > 0
@@ -919,7 +919,7 @@ def process_and_plot(dat, feff_paths, selected_path_keys, shell_info, absorber_i
         # Finalize Plot 4 Layout only if some data was added
         if len(fig4.data) > 0:
              if r_present: fig4.update_xaxes(range=[plot_options['r_min'], plot_options['r_max']]) # Apply R range
-             fig4.update_layout(title=f"Fourier Transform: {filename_for_title}", xaxis_title="R (Å)", yaxis_title="χ(R) Magnitude (arb. units)", legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
+             fig4.update_layout(title=f"Fourier Transform: {filename_for_title}", xaxis_title="R (Å)", yaxis_title="χ(R) Magnitude", legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
              st.plotly_chart(fig4, use_container_width=True)
         # No need for else, handled by warnings above
 
@@ -1104,7 +1104,7 @@ def process_and_plot(dat, feff_paths, selected_path_keys, shell_info, absorber_i
 
                  if paths_plotted_r > 0:
                      fig_indiv_r.update_xaxes(range=[plot_options['r_min'], plot_options['r_max']])
-                     fig_indiv_r.update_layout(title=f"Individual Path |χ(R)|", xaxis_title="R (Å)", yaxis_title="|χ(R)| (arb. units)", legend_title='Path', hovermode='x unified', height=500, showlegend=True)
+                     fig_indiv_r.update_layout(title=f"Individual Path |χ(R)|", xaxis_title="R (Å)", yaxis_title="|χ(R)|", legend_title='Path', hovermode='x unified', height=500, showlegend=True)
                      st.plotly_chart(fig_indiv_r, use_container_width=True)
                  else:
                      st.info("No individual path |χ(R)| data calculated or available to plot.")
@@ -1448,7 +1448,7 @@ if st.session_state.get('fit_result_obj') is not None: # Use .get for safety
                     # Use fit_rmin/fit_rmax defined earlier in script run
                     #fig5.update_xaxes(range=[fit_rmin, fit_rmax])
                     fig5.update_xaxes(range=[0,6])
-                    fig5.update_layout(title=f"Fit Comparison in R-Space: {display_filename}", xaxis_title="R (Å)", yaxis_title="χ(R) Magnitude (arb. units)", legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
+                    fig5.update_layout(title=f"Fit Comparison in R-Space: {display_filename}", xaxis_title="R (Å)", yaxis_title="χ(R) Magnitude", legend_title='Legend', hovermode='x unified', height=500, showlegend=True)
                     st.plotly_chart(fig5, use_container_width=True)
                 else:
                     st.warning("No R-space data found in fit dataset to plot comparison.")
