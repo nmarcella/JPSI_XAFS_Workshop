@@ -43,118 +43,119 @@ if 'current_data_basename' not in st.session_state:
 #      st.session_state.fit_history = []
 
 # --- Explanation Expanders ---
-with st.expander("Step 1: What does 'Pre-edge Subtraction' do?"):
+with st.expander("Step 1: What does 'Pre-edge Subtraction & Normalization' do?"):
     st.markdown("""
-    The `pre_edge` function performs several standard steps in XAFS (X-ray Absorption Fine Structure) analysis:
+    This step isolates the XAFS signal from the raw absorption spectrum by removing the background and normalizing the absorption jump.
 
-    1.  **Find E0:** Determines the absorption edge energy (E0), often from the maximum of the derivative of the absorption data (`mu`), if not provided by the user.
-    2.  **Fit Pre-edge:** Fits a line (or sometimes a low-order polynomial) to the region *before* the absorption edge (`pre1` to `pre2` relative to E0). This represents background absorption not related to the element of interest.
-    3.  **Fit Post-edge:** Fits a polynomial (typically 1st to 3rd order, `nnorm`) to the region *after* the absorption edge (`norm1` to `norm2` relative to E0). This models the atomic absorption background.
-    4.  **Calculate Edge Step:** Extrapolates the pre-edge line and post-edge polynomial to E0 to estimate the height of the absorption jump (`edge_step`).
-    5.  **Subtract & Normalize:**
-        * Subtracts the extrapolated pre-edge line from the entire `mu` spectrum.
-        * Divides the result by the calculated `edge_step` (derived from the post-edge fit extrapolated to E0) to normalize the data, typically making the jump height equal to 1.
-    6.  **Flatten (Optional):** Can calculate a "flattened" spectrum (`dat.flat`) by removing residual low-frequency oscillations from the normalized data using another polynomial fit.
+    Key Actions (using Larch's `pre_edge` function):
+    1.  **Find E₀:** Determines the absorption edge energy threshold (E₀).
+    2.  **Fit Pre-edge:** Fits a line or polynomial to the region *before* the edge to model instrument background and absorption from other elements.
+    3.  **Fit Post-edge:** Fits a polynomial to the region *after* the edge to model the smooth, atomic-like absorption background.
+    4.  **Calculate Edge Step:** Estimates the height of the absorption jump at E₀ using the pre- and post-edge fits.
+    5.  **Subtract & Normalize:** Subtracts the pre-edge line and divides the spectrum by the edge step height, typically scaling the jump to unity.
+    6.  **Flatten (Optional):** Further removes low-frequency oscillations from the normalized spectrum.
 
-    The function stores results like the calculated `e0`, `edge_step`, the `pre_edge` line, the `post_edge` normalization curve, and the final `norm`alized data array back into the data group (`dat` in this app).
+    The primary outputs used in later steps are the normalized absorption and the determined edge energy E₀.
 
     [More Information](https://xraypy.github.io/xraylarch/xafs_preedge.html)
     """)
 
-with st.expander("Step 2: What does 'Autobk Background Subtraction' do?"):
-    st.markdown("""
-    The `autobk` function empirically determines the smooth, isolated-atom absorption background (`μ₀(k)`) to extract the EXAFS oscillations (`χ(k)`).
+with st.expander("Step 2: What does 'Background Subtraction (Autobk)' do?"):
+   st.markdown("""
+   This step further refines the background removal process to extract the fine structure oscillations (EXAFS, denoted χ) from the normalized absorption spectrum.
 
-    Key Concepts:
-    * **Goal:** Isolate the `χ(k)` signal, which contains structural information, from the overall absorption `μ(E)`.
-    * **Method:** It uses the AUTOBK algorithm, fitting a flexible spline function to the data in k-space (photoelectron wavenumber, related to energy above E₀).
-    * **Low-R Filtering:** The core idea is that the true EXAFS signal (`χ`) primarily comes from scattering atoms at distances > ~1 Å. Any signal appearing at very short distances (low-R) in the Fourier Transform of `χ(k)` is likely due to imperfections in the initial background subtraction or atomic effects not related to bonding. Autobk adjusts the spline to minimize these low-R components below a cutoff distance (`rbkg`).
-    * **Parameters:**
-        * `rbkg`: The cutoff distance (Å) in R-space. Components below this value are minimized during the spline fit. A typical value is ~1 Å.
-        * `kweight`: How the `χ(k)` data is weighted during the process. Higher weights emphasize the signal at higher k-values. Common values are 1, 2, or 3.
-    * **Output:** Creates `k` (wavenumber array), `chi` (EXAFS oscillations array, stored as `chi_exp` in this app), and `bkg` (the calculated μ₀ background array vs energy) within the data group (`dat`).
+   Key Concepts (using Larch's `autobk` function):
+   * **Goal:** Isolate the χ(k) signal, which contains structural information (bond lengths, coordination numbers, disorder), from the remaining smooth background in the normalized data.
+   * **Method:** It converts the energy axis to photoelectron wavenumber (k) space. An algorithm (AUTOBK) then fits a flexible spline function to the data.
+   * **Low-R Filtering:** The spline is adjusted so that the resulting χ(k), when Fourier transformed to distance (R) space, has minimal intensity below a certain cutoff distance (`Rbkg` parameter, typically ~1 Å). This assumes that real structural information appears at larger distances, while low-R signals are artifacts or atomic background.
+   * **Parameters:** `Rbkg` controls the distance cutoff, and `k-weight` emphasizes different parts of the k-range during the spline fitting.
+   * **Output:** Produces the experimental EXAFS signal `χ(k)` as a function of wavenumber `k`, and the calculated smooth background `μ₀(E)` that was subtracted.
+    
+    [More Information](https://xraypy.github.io/xraylarch/xafs_autobk.html#the-autobk-algorithm)   
     """)
+
 
 with st.expander("Step 3: What does 'Fourier Transform (k -> R)' do?"):
     st.markdown("""
-    The `xftf` function performs a Fourier Transform (FT) on the EXAFS data `χ(k)` to convert it into `χ(R)`, which represents the signal as a function of distance (R) from the absorbing atom. This helps visualize the contributions from different shells of neighboring atoms.
+    This step converts the EXAFS signal from wavenumber (k) space to distance (R) space, making it easier to visualize contributions from different shells of neighboring atoms.
 
-    Key Concepts:
-    * **Goal:** Transform the oscillatory `χ(k)` signal into R-space to identify bond distances. Peaks in `|χ(R)|` roughly correspond to atomic shells (uncorrected for phase shifts).
+    Key Concepts (using Larch's `xftf` function):
+    * **Goal:** Transform the oscillatory `χ(k)` signal into a representation showing signal intensity versus distance `R` from the absorbing atom. Peaks in the magnitude of this transformed signal, `|χ(R)|`, roughly correspond to shells of atoms at specific distances (though uncorrected for electron scattering phase shifts).
     * **Process:**
-        1.  Applies a k-weighting (`k^kweight`) to `χ(k)` to emphasize certain parts of the signal.
-        2.  Applies a window function (`window`) over a specified k-range (`kmin` to `kmax`) with tapering (`dk`, `dk2`). This smoothly brings the weighted `χ(k)` signal to zero at the edges, reducing artifacts (ringing) in the resulting `χ(R)`.
-        3.  Performs a Fast Fourier Transform (FFT) on the weighted, windowed `χ(k)`.
-    * **Parameters:**
-        * `kmin`, `kmax`: The range in k (Å⁻¹) over which the FT is performed.
-        * `kweight`: The exponent for k-weighting (often 1, 2, or 3).
-        * `window`: The type of window function used (e.g., 'hanning', 'kaiser'). Hanning is common.
-        * `dk`, `dk2`: Tapering parameters for the window function edges.
-    * **Output:** Creates `r` (distance array in Å), `chir_mag` (magnitude of `χ(R)`), `chir_re` (real part), `chir_im` (imaginary part), and `kwin` (the window function used) in the data group (`dat`). The magnitude `chir_mag` is typically plotted.
+        1.  Applies a k-weighting (e.g., k¹, k², k³) to the `χ(k)` data, which can enhance the signal at higher k-values.
+        2.  Applies a window function (e.g., Hanning, Kaiser) over a defined k-range (`kmin` to `kmax`). This smoothly tapers the `χ(k)` signal to zero at the boundaries, preventing sharp truncation artifacts in the R-space result. Tapering parameters (`dk`) control the smoothness of the window edges.
+        3.  Performs a Fast Fourier Transform (FFT) on the weighted and windowed `χ(k)` data.
+    * **Output:** Generates the distance array `r` and the complex `χ(R)`, usually visualized as its magnitude `|χ(R)|`, but the real (`Re[χ(R)]`) and imaginary (`Im[χ(R)]`) parts are also available.
+    
+    [More Information](https://xraypy.github.io/xraylarch/xafs_fourier.html)
     """)
 
 with st.expander("Step 4: What is EXAFS Modeling with Feff Paths?"):
+   st.markdown("""
+   EXAFS modeling aims to build a theoretical `χ(k)` signal by summing calculated signals from individual photoelectron scattering paths and comparing it to the experimental data. This allows quantitative analysis of the local atomic structure.
+
+   Key Concepts:
+   * **EXAFS Equation:** The total `χ(k)` signal arises from the interference of the outgoing photoelectron wave with waves backscattered from neighboring atoms. It can be described as a sum over all possible scattering paths (single scattering, multiple scattering). Each path's contribution depends on structural and scattering properties.
+   * **Feff Calculation:** Programs like Feff calculate the theoretical scattering amplitude ($f_{\text{eff}}(k)$) and phase shift ($δ(k)$) for specific geometric paths within a model atomic structure. These results are typically stored in `feffNNNN.dat` files.
+   * **Path Representation:** Larch reads `feffNNNN.dat` files (using `feffpath`) into objects that store the calculated scattering properties and also hold adjustable structural parameters for that path (like path length change `ΔR`, disorder `σ²`, amplitude factor `S₀²`, etc.).
+   * **Calculating Path χ(k):** Larch calculates the `χ(k)` for a single path (using `path2chi`) based on the Feff results and the current values of the adjustable path parameters, using the EXAFS equation.
+   * **Summing Paths:** To model the full experimental spectrum, the contributions from multiple significant scattering paths are summed together (using `ff2chi`).
+   * **Goal:** Select relevant Feff paths representing the likely local structure and adjust their parameters to make the summed model `χ(k)` match the experimental `χ(k)`.
+
+   **EXAFS Equation (Single Path):**
+
+   The `χ(k)` for a single scattering path is calculated using the following equation (or a close variant):
+   """)
+   st.latex(r'''
+   \chi_i(k) = S_0^2 \left( \frac{N_i f_i(k)}{k R_i^2} \right) e^{-2k^2 \sigma_i^2} e^{-2R_i / \lambda_i(k)} \sin(2kR_i + \delta_i(k))
+   ''')
+   # Simplified version for conceptual understanding, omitting cumulants & complex p for clarity here.
+   # The full Larch equation used is more complex, shown below.
+   st.markdown("**Full Equation used in Larch/Feff calculations:**")
+   st.latex(r'''
+   \chi(k) = \text{Im} \left[
+       \frac{N S_0^2 f_{\text{eff}}(k)}{k (R_{\text{eff}} + \Delta R)^2}
+       e^{-2p'' R_{\text{eff}}}
+       e^{-2p^2 \sigma^2}
+       e^{\frac{2}{3} p^4 c_4}
+       e^{i \left( 2k R_{\text{eff}} + \delta(k) + 2p(\Delta R - \frac{2\sigma^2}{R_{\text{eff}}}) - \frac{4}{3} p^3 c_3 \right)}
+   \right]
+   ''')
+   st.markdown("""
+   Where:
+   * `χ(k)`: EXAFS oscillation for the path.
+   * `k`: Photoelectron wavenumber (Å⁻¹).
+   * `N`: Path degeneracy (number of equivalent paths, adjustable).
+   * `S₀²`: Amplitude reduction factor (accounts for core-hole relaxation, adjustable).
+   * `f_eff(k)`: Effective scattering amplitude calculated by Feff.
+   * `R_eff`: Nominal half-path length calculated by Feff.
+   * `ΔR`: Change in half-path length (related to bond distance change, adjustable).
+   * `σ²`: Mean-square displacement in half-path length (Debye-Waller factor, accounts for disorder, adjustable).
+   * `λ(k)` or `p''`: Mean free path / imaginary part of complex wavenumber `p` (accounts for inelastic losses).
+   * `δ(k)`: Total scattering phase shift calculated by Feff.
+   * `E₀`: Energy shift applied to align theoretical and experimental energy scales (adjustable).
+   * `c₃`, `c₄`: Third and fourth cumulants (optional, account for distribution asymmetry/shape).
+   * `p`, `ϕ_corr`: Terms related to complex wavenumber and phase corrections.
+               
+    [More Information](https://xraypy.github.io/xraylarch/xafs_feffit.html)
+   """)
+
+with st.expander("Step 5: What is EXAFS Fitting?"):
     st.markdown("""
-    EXAFS modeling aims to reproduce the experimental `χ(k)` signal by summing theoretical signals calculated for individual photoelectron scattering paths using Feff.
+    Fitting involves refining the adjustable parameters of the theoretical Feff paths (like `S₀²`, `E₀`, `ΔR`, `σ²`) to minimize the difference between the summed model `χ(k)` (or its Fourier Transform `χ(R)`) and the experimental data.
 
-    Key Concepts:
-    * **EXAFS Equation:** The `χ(k)` signal is mathematically described as a sum over all possible scattering paths the photoelectron can take. Each path's contribution depends on factors like the path length (R), the number of atoms involved (degeneracy N), atomic scattering properties (amplitude F(k) and phase shift δ(k)), and disorder terms (like mean-square displacement σ²).
-    * **Feff Calculation:** Feff calculates the theoretical scattering amplitude F(k) and phase shift δ(k) for specific paths within a given atomic structure. These results are stored in `feffNNNN.dat` files.
-    * **FeffPath Object:** Larch reads a `feffNNNN.dat` file into a `FeffPath` object using `feffpath()`. This object contains the theoretical Feff results (`amp`, `pha`, `lam`, etc.) and adjustable parameters (`N`, `E₀`, `ΔR`, `σ²`, etc.).
-    * **Calculating Path Chi:** `path2chi()` calculates the `χ(k)` contribution for a *single* FeffPath object using the EXAFS equation and the current values of its adjustable parameters.
-    * **Summing Paths:** `ff2chi()` takes a *list* of FeffPath objects, calculates `χ(k)` for each (using their current parameters), and sums them to produce a total model `χ(k)`.
-    * **Goal:** By selecting relevant Feff paths and potentially adjusting their parameters (N, E₀, ΔR, σ²), one can try to match the summed model `χ(k)` to the experimental `χ(k)`.
-
-    **EXAFS Equation (Larch/Feff Implementation):**
-
-    The `χ(k)` for a single path is calculated using the following equation (or a close variant):
-    """)
-    st.latex(r'''
-    \chi(k) = \text{Im} \left[
-        \frac{N S_0^2 f_{\text{eff}}(k)}{k (R_{\text{eff}} + \Delta R)^2}
-        e^{-2p'' R_{\text{eff}}}
-        e^{-2p^2 \sigma^2}
-        e^{\frac{2}{3} p^4 c_4}
-        e^{i \left( 2k R_{\text{eff}} + \delta(k) + 2p(\Delta R - \frac{2\sigma^2}{R_{\text{eff}}}) - \frac{4}{3} p^3 c_3 \right)}
-    \right]
-    ''')
-    # Note: Larch often uses the Real part in practice for chi(k), but this is the formal complex equation.
-    st.markdown("""
-    Where:
-    * `χ(k)`: EXAFS oscillation for the path vs. wavenumber `k`.
-    * `Im[...]`: Imaginary part of the complex expression.
-    * `k`: Photoelectron wavenumber (Å⁻¹) used for calculations. It's related to the Feff wavenumber $k_{\mathrm{feff}}$ and the edge shift $E_0$ by the equation below.
-    """)
-    st.latex(r'''k = \sqrt{k_{\mathrm{feff}}^2 - \frac{2m_e E_0}{\hbar^2}}''')
-    st.markdown("""
-    * `N`: Path degeneracy (coordination number, adjustable parameter `degen`).
-    * `S₀²`: Amplitude reduction factor (accounts for many-body effects, adjustable parameter `s02`).
-    * `f_eff(k)`: Effective scattering amplitude calculated by Feff (`_feffdat.amp`).
-    * `R_eff`: Nominal path length calculated by Feff (`path.reff`).
-    * `ΔR`: Change in path length from nominal (adjustable parameter `deltar`).
-    * `p`: Complex photoelectron wavenumber (`p = p' + i p''`), includes core-hole lifetime and inelastic losses (`_feffdat.rep`, `_feffdat.lam`) and potential imaginary energy shift (`ei`).
-    * `p''`: Imaginary part of `p`, related to the mean free path `λ(k)`.
-    * `σ²`: Mean-square displacement in path length (Debye-Waller factor, adjustable parameter `sigma2`).
-    * `c₃`: Third cumulant of path length distribution (accounts for asymmetry, adjustable parameter `third`).
-    * `c₄`: Fourth cumulant of path length distribution (adjustable parameter `fourth`).
-    * `δ(k)`: Total phase shift calculated by Feff (`_feffdat.pha`).
-    * `Eᵢ`: Imaginary energy shift (adjustable parameter `ei`), incorporated into `p`.
-    """)
-
-with st.expander("Step 5: What is EXAFS Fitting with Feffit?"):
-    st.markdown("""
-    Fitting involves adjusting the parameters of the theoretical Feff paths (like bond distances, coordination numbers, disorder factors) to make the summed model `χ(k)` (or its Fourier Transform `χ(R)`) match the experimental data as closely as possible.
-
-    Key Concepts:
-    * **Goal:** Quantify structural parameters by finding the parameter values that minimize the difference between the model and the data.
-    * **Process (`feffit`):**
-        1.  **Define Parameters:** Create Larch `Parameters` for the variables you want to fit (e.g., `S₀²`, `E₀`, `ΔR` or `α`, `σ²`). Parameters can be fixed (`vary=False`) or allowed to vary (`vary=True`) with an initial guess. You can also define constraints between parameters.
-        2.  **Assign Parameters to Paths:** Link the parameters defined in step 1 to the corresponding attributes of the FeffPath objects (e.g., `path.s02 = 's02_global'`, `path.deltar = 'alpha * reff'`).
-        3.  **Define Transform & Fit Range:** Specify how the data and model should be compared (e.g., in R-space) and over what range (e.g., `rmin`, `rmax`). This uses a `FeffitTransform` object.
-        4.  **Create Dataset:** Combine the experimental data (`k`, `chi_exp`), the list of FeffPath objects (with parameters assigned), and the transform settings into a `FeffitDataset`.
-        5.  **Run Fit:** Call `feffit()` with the parameter group and the dataset(s). Larch uses optimization algorithms (like Levenberg-Marquardt) to find the best-fit parameter values.
-    * **Output:** The fit returns the parameter group updated with best-fit values, uncertainties, correlations, and fit statistics (`chi_square`, R-factor). A `model` group containing the calculated best-fit `chi(k)` and `chi(R)` is also added to the dataset.
-    * **Information Limit:** EXAFS data has a limited number of independent data points (~`2ΔkΔR/π`). The number of varying parameters in a fit should generally not exceed this limit to ensure meaningful results. Fitting in R-space helps focus the fit on specific structural features.
+    Key Concepts (using Larch's `feffit`):
+    * **Goal:** Obtain quantitative values for structural parameters (distances, disorder, coordination) that best describe the measured data.
+    * **Process:**
+        1.  **Define Parameters:** Identify which physical parameters (like `S₀²`, `E₀`, `ΔR`, `σ²`, `N` for each path) will be allowed to *vary* in the fit and provide reasonable initial *guesses*. Other parameters can be held *fixed*. You can also define mathematical relationships *between* parameters (constraints).
+        2.  **Assign Parameters to Paths:** Link the defined fit parameters to the corresponding attributes of the chosen Feff path objects. For example, the `ΔR` attribute of path 'feff0001.dat' might be set to vary according to a fit parameter named 'dr_fe1'.
+        3.  **Define Fit Space & Range:** Choose the space for comparison (typically R-space to focus on specific distance ranges) and the range (`rmin` to `rmax`) over which the fit quality will be evaluated. This uses a `FeffitTransform` object, often reusing k-space windowing parameters from the FT step.
+        4.  **Create Dataset:** Combine the experimental data, the list of Feff path objects (linked to fit parameters), and the transform/range settings into a `FeffitDataset`.
+        5.  **Run Fit:** Execute the fit (`feffit`). Optimization algorithms adjust the varying parameters to minimize the difference (residual) between the data and the model within the specified fit range.
+    * **Output:** The fit provides the best-fit values for the parameters, their estimated uncertainties, correlations between parameters, and goodness-of-fit statistics (like chi-square and R-factor). It also calculates the best-fit model signal.
+    * **Information Limit:** Remember that EXAFS data contains a finite amount of information. Trying to fit too many parameters simultaneously (exceeding the number of independent points, roughly `2ΔkΔR/π`) can lead to unstable or unreliable results.
+    
+    [More Information](https://xraypy.github.io/xraylarch/xafs_feffit.html)
     """)
 
 # --- Constants ---
